@@ -180,6 +180,48 @@ data::BinData EditEngine::originalBytesValues(size_t pos, size_t size) const {
   return original_data_->binData().data(pos, size);
 }
 
+QVector<bool> EditEngine::modifiedPositions(size_t pos, size_t size) const {
+  QVector<bool> result(size);
+
+  size_t end_pos = pos + size;
+  auto next_it = address_mapping_.upperBound(pos);
+  assert(next_it != address_mapping_.cbegin());
+  auto it = next_it;
+  --it;
+
+  if (next_it == address_mapping_.cend() || end_pos <= next_it.key()) {
+    if (it->fragment_ != nullptr) {
+      for (size_t i = 0; i < size; ++i) {
+        result[i] = true;
+      }
+    }
+  } else {
+    if (it->fragment_ != nullptr) {
+      for (size_t i = 0; i < next_it.key() - pos; ++i) {
+        result[i] = true;
+      }
+    }
+    ++it;
+    ++next_it;
+    while (next_it != address_mapping_.cend() && next_it.key() < end_pos) {
+      if (it->fragment_ != nullptr) {
+        for (size_t i = it.key() - pos; i < next_it.key() - pos; ++i) {
+          result[i] = true;
+        }
+      }
+      ++it;
+      ++next_it;
+    }
+    if (it->fragment_ != nullptr) {
+      for (size_t i = it.key() - pos; i < size; ++i) {
+        result[i] = true;
+      }
+    }
+  }
+
+  return result;
+}
+
 data::BinData EditEngine::getDataFromEditNode(const EditNode& edit_node,
                                               size_t offset,
                                               size_t size) const {

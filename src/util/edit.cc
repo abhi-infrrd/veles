@@ -181,34 +181,26 @@ QVector<bool> EditEngine::modifiedPositions(size_t pos, size_t size) const {
   auto it = next_it;
   --it;
 
+  auto setResultTrue = [&it, &result](size_t start, size_t end) {
+    if (it->fragment_ != nullptr) {
+      for (size_t i = start; i < end; ++i) {
+        result[i] = true;
+      }
+    }
+  };
+
   if (next_it == address_mapping_.cend() || end_pos <= next_it.key()) {
-    if (it->fragment_ != nullptr) {
-      for (size_t i = 0; i < size; ++i) {
-        result[i] = true;
-      }
-    }
+    setResultTrue(0, size);
   } else {
-    if (it->fragment_ != nullptr) {
-      for (size_t i = 0; i < next_it.key() - pos; ++i) {
-        result[i] = true;
-      }
-    }
+    setResultTrue(0, next_it.key() - pos);
     ++it;
     ++next_it;
     while (next_it != address_mapping_.cend() && next_it.key() < end_pos) {
-      if (it->fragment_ != nullptr) {
-        for (size_t i = it.key() - pos; i < next_it.key() - pos; ++i) {
-          result[i] = true;
-        }
-      }
+      setResultTrue(it.key() - pos, next_it.key() - pos);
       ++it;
       ++next_it;
     }
-    if (it->fragment_ != nullptr) {
-      for (size_t i = it.key() - pos; i < size; ++i) {
-        result[i] = true;
-      }
-    }
+    setResultTrue(it.key() - pos, size);
   }
 
   return result;
